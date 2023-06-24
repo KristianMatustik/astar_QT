@@ -6,9 +6,13 @@ USER GUIDE:
 
 Step1: editing the maze
 In the app, press number to choose from selection of possible blocks (what you want to change squares in the maze to):
+
 1-start (green)
+
 2-end (red)
+
 3-wall (black)
+
 4-empty (white)
 
 Then click on or click and drag on the squares you want to change to the selected atribute. Repeat untill the maze is complete, has wanted structure and both starting and ending points.
