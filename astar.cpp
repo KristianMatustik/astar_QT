@@ -32,7 +32,7 @@ void astar::solve()
     eventsDisabled = true;
     clear();
 
-    std::deque<pair> open;
+    std::deque<pair> open;    //priority queue would be probably faster, but didnt want to study the documentation and implemented it my way (there is also problem updating the priority in std::p_q, would need own implementation probably)
     std::deque<int> g;
 
     pair** prev = new pair *[m];
@@ -72,75 +72,79 @@ void astar::solve()
         else
             QThread::msleep(delay);
 
-        pair q = open.front();
-        int iq = 0;
-        int gq = g[iq];
-        int fq = g[iq] + distance(q.x, q.y, end.x, end.y);
 
+        pair q = open.front();
+        int q_index = 0;
+        int q_g = g[q_index];
+        int q_f = g[q_index] + distance(q.x, q.y, end.x, end.y);
         for (unsigned int i = 1; i < open.size(); i++) {
             pair p = open[i];
-            if (g[i] + distance(p.x, p.y, end.x, end.y) < fq) {
-                iq = i;
+            if (g[i] + distance(p.x, p.y, end.x, end.y) < q_f) {
+                q_index = i;
                 q = p;
-                fq = g[i] + distance(p.x, p.y, end.x, end.y);
-                gq = g[i];
+                q_f = g[i] + distance(p.x, p.y, end.x, end.y);
+                q_g = g[i];
             }
         }
-        open.erase(open.begin() + iq);
-        g.erase(g.begin() + iq);
+        open.erase(open.begin() + q_index);
+        g.erase(g.begin() + q_index);
         closed[q.x][q.y] = true;
-        if (q.x != start.x || q.y != start.y) {
-            grid[q.x][q.y] = 5;
-            qApp->processEvents();
+
+        if (q.x == end.x && q.y == end.y)
+        {
+            q = prev[q.x][q.y];
+            while (q.x != start.x || q.y != start.y)
+            {
+                grid[q.x][q.y] = 4;
+                q = prev[q.x][q.y];
+            }
+            open.clear();
+            g.clear();
+            break;
         }
-        //***
 
-        pair p;
-        for (int i = -1; i < 2; i++) {
-            for (int j = -1; j < 2; j++) {
-                p.x = q.x + j;
-                p.y = q.y + i;
+        if (q.x != start.x || q.y != start.y)
+        {
+            grid[q.x][q.y] = 5;
+        }
 
-                //***
-                if ((i == 0 && j == 0) || outOfBounds(p.x, p.y) || (grid[p.x][p.y] == 2)
-                    || closed[p.x][p.y]) {
+
+        for (int i = -1; i < 2; i++)
+        {
+            for (int j = -1; j < 2; j++)
+            {
+                if (i == 0 && j == 0) continue;
+                pair p = {q.x + j, q.y + i};
+
+                if (outOfBounds(p.x, p.y) || (grid[p.x][p.y] == 2) || closed[p.x][p.y])
+                {
                     continue;
                 }
-                //***
 
-                //***
-                if (p.x == end.x && p.y == end.y) {
-                    while (q.x != start.x || q.y != start.y) {
-                        grid[q.x][q.y] = 4;
-                        q = prev[q.x][q.y];
-                    }
-                    i = 2;
-                    j = 2;
-                    open.clear();
-                    continue;
-                }
-                //***
-
-                //***
-                int fp = gq + distance(q.x, q.y, p.x, p.y) + distance(p.x, p.y, end.x, end.y);
+                int p_g = q_g + distance(q.x, q.y, p.x, p.y);
+                int p_f = p_g + distance(p.x, p.y, end.x, end.y);
                 bool isOpen = false;
-                for (unsigned int k = 0; k < open.size(); k++) {
-                    pair a = open[k];
-                    if (a.x == p.x && a.y == p.y) {
+                for (unsigned int k = 0; k < open.size(); k++)
+                {
+                    if (open[k].x == p.x && open[k].y == p.y)
+                    {
                         isOpen = true;
-                        if (fp < g[k] + distance(a.x, a.y, end.x, end.y)) {
-                            g[k] = gq + distance(q.x, q.y, a.x, a.y);
+                        if (p_f < g[k] + distance(p.x, p.y, end.x, end.y))
+                        {
+                            g[k] = p_g;
                             prev[p.x][p.y] = q;
                         }
                     }
                 }
-                if (!isOpen) {
+
+                if (!isOpen)
+                {
                     open.push_front(p);
-                    g.push_front(gq + distance(q.x, q.y, p.x, p.y));
-                    grid[p.x][p.y] = 6;
+                    g.push_front(q_g + distance(q.x, q.y, p.x, p.y));
+                    if (p.x!=end.x || p.y!=end.y)
+                        grid[p.x][p.y] = 6;
                     prev[p.x][p.y] = q;
                 }
-                //***
             }
         }
     }
@@ -182,8 +186,6 @@ void astar::keyReleaseEvent(QKeyEvent *e)
 
     if (e->key() == 32)
         solve();
-    else if (e->key() > 53)
-        return;
     else
         GridWindow::keyReleaseEvent(e);
     update();
@@ -245,8 +247,8 @@ void astar::mousePressEvent(QMouseEvent *e)
 
 int astar::distance(int x1, int y1, int x2, int y2)
 {
-    int dx = std::abs((float) x1 - x2);
-    int dy = std::abs((float) y1 - y2);
+    int dx = std::abs(x1 - x2);
+    int dy = std::abs(y1 - y2);
 
     int diag = std::min(dx, dy);
     int rest = std::abs(dx - dy);
