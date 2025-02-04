@@ -46,6 +46,7 @@ GridWindow::~GridWindow()
     {
         delete[] grid[i];
     }
+    delete[] grid;
     delete[] colors;
 }
 
